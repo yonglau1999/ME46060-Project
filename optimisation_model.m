@@ -2,7 +2,7 @@
 
 %% ---------- Load Returns data ----------
 returnsTable=readtable('Compiled_Returns_Data.csv');
-returns = table2array(returnsTable);
+returns = table2array(returnsTable(:,1:4));
 annualreturns=dictionary('Cash',-0.54,'RealEstate',0.09,'Equity',0.17,'Gold',0.10,'Tbill',0.02);
 portfolioname=char({'Cash','RealEstate','Equity','Gold','Tbill'});
 
