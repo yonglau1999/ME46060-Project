@@ -10,22 +10,14 @@ E_risk_free=expReturns(1,5);
 covMatrix = cov(returns);
 
 %% ---------- design variables ----------
-proportion_equity = 0.2;
-proportion_tbill = 0.2;
-proportion_gold = 0.2;
 proportion_cash = 0.2;
+proportion_equity = 0.2;
+proportion_gold =0.2;
+proportion_tbill = 0.2;
+
 alpha=0.5;
 
 % ---------- end of design variables ----------
-
-%% ---------- Get return, volatility ----------
-[E_p,sigma_p] = calc(proportion_equity,proportion_tbill,proportion_gold,proportion_cash,proportion_real_estate,expReturns,...
-    covMatrix)
-
-
-
-% ---------- end of objective functions ----------
-
 %% ---------- constraints ----------
 
 % Constraint 1: Sum of proportions = 1
@@ -34,55 +26,55 @@ proportion_real_estate = 1 - proportion_equity - proportion_tbill - proportion_g
 % Constraint 2: Maximum volatility
 sigma_p_max = 0;
 
-% Constraint 3: Minimum return
-E_p_min = 0;
 
-
-% Constraint 4: Diversification
-proportion_equity_min = 0.1;
-proportion_tbill_min = 0.1;
-proportion_gold_min = 0.1;
+% Constraint3 : Diversification
 proportion_cash_min = 0.1;
 proportion_real_estate_min = 0.1;
+proportion_equity_min = 0.1;
+proportion_gold_min = 0.1;
+proportion_tbill_min = 0.1;
+
+
 % ---------- end of constraints ----------
+%% ---------- Monotonicity ----------
+weighted_U = -(0.5 * ([x1; x2; x3; x4; x5]' * (expReturns' - E_risk_free) / ...
+    sqrt([x1; x2; x3; x4; x5]' * covMatrix * [x1; x2; x3; x4; x5])) + ...
+    0.5 * ([x1; x2; x3; x4; x5]' * expReturns' - alpha * ([x1; x2; x3; x4; x5]' * covMatrix * [x1; x2; x3; x4; x5])));
 
+%% ---------- Get return, volatility ----------
+[E_p,sigma_p] = calc([proportion_equity;proportion_tbill;proportion_gold;proportion_cash;proportion_real_estate],expReturns,...
+    covMatrix);
 
+%% ---------- Boundedness Check ----------
 
+numAssets = size(returns, 2);
+numPortfolios = 1000000; % Define the number of portfolios to simulate
+results = zeros(3, numPortfolios);  % Initialize results matrix
+weightsMatrix = zeros(numPortfolios, numAssets);  % To store weights of each portfolio
 
+for i = 1:numPortfolios
+    weights = rand(numAssets, 1);  % Randomly generate weights
+    weights = weights / sum(weights);  % Normalize weights to sum to 1
+    [preturn,pvolatility] = calc(weights,expReturns,covMatrix);
+    [S_p,U,weighted_U] = obj(preturn,pvolatility,E_risk_free,alpha);
 
+ 
+    results(1, i) = preturn;  % Store portfolio return
+    results(2, i) = pvolatility;    % Store portfolio risk
+    results(3, i) = weighted_U;  % Store Sharpe ratio (return/risk)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%% ---------- Function for calculating return and volatility ----------
-function [preturn,pvolatility] = calc(x1,x2,x3,x4,x5,expReturns,covMatrix)
-    weightmatrix= [x1;x2;x3;x4;x5];
-    preturn = weightmatrix' * expReturns';
-    pvolatility=sqrt(weightmatrix' * covMatrix * weightmatrix);
+    weightsMatrix(i, :) = weights';  % Store the weights
 end
 
-%% ---------- Objective functions ----------
+figure(1)
+scatter(results(2,:),results(3,:),50,"red")
+xlabel('Volatility')
+ylabel('Objective function')
 
-%Sharpe Ratio and Utility
-function [S_p,U,weighted_U] = obj(E_p,sigma_p,E_risk_free,alpha)
-    S_p = (E_p - E_risk_free)/sigma_p;
-    U = E_p - alpha*(sigma_p^2);
-    weighted_U=0.5 * S_p + 0.5 * U;
-end
-%% ---------- Own Optimiser ----------
+[minU,index]=min(results(3,:));
+corrweights=weightsMatrix(index,:)
+
+% %% ---------- Own Optimiser ----------
 % numAssets = size(returns, 2);  % Number of assets
 % expReturns = mean(returns);    % Expected returns of each asset
 % covMatrix = cov(returns);      % Covariance matrix of the returns
@@ -95,7 +87,6 @@ end
 % for i = 1:numPortfolios
 %     weights = rand(numAssets, 1);  % Randomly generate weights
 %     weights = weights / sum(weights);  % Normalize weights to sum to 1
-% 
 %     portfolioReturn = weights' * expReturns';  % Expected return of the portfolio
 %     portfolioRisk = sqrt(weights' * covMatrix * weights);  % Risk (standard deviation) of the portfolio
 % 
@@ -158,3 +149,19 @@ end
 % disp('Equation of the fitted curve (efficient frontier):');
 % disp(['f(volatility) = ', num2str(p(1)), ' * volatility^3 + ', num2str(p(2)), ' * volatility^2 + '...
 %     , num2str(p(3)),'* volatility + ',num2str(p(4))]);
+%% ---------- Function for calculating return and volatility ----------
+function [preturn,pvolatility] = calc(weightmatrix,expReturns,covMatrix)
+    preturn = weightmatrix' * expReturns';
+    pvolatility=sqrt(weightmatrix' * covMatrix * weightmatrix);
+end
+
+%% ---------- Objective functions ----------
+
+%Sharpe Ratio and Utility
+function [S_p,U,weighted_U] = obj(E_p,sigma_p,E_risk_free,alpha)
+    S_p = (E_p - E_risk_free)/sigma_p;
+    U = E_p - alpha*(sigma_p^2);
+    weighted_U=-(0.5 * S_p + 0.5 * U);
+end
+% ---------- end of objective functions ----------
+
