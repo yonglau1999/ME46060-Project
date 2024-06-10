@@ -27,7 +27,7 @@ proportion_real_estate = 1 - proportion_equity - proportion_tbill - proportion_g
 sigma_p_max = 0;
 
 
-% Constraint3 : Diversification
+% Constraint 3 : Diversification
 proportion_cash_min = 0.1;
 proportion_real_estate_min = 0.1;
 proportion_equity_min = 0.1;
@@ -37,6 +37,9 @@ proportion_tbill_min = 0.1;
 
 % ---------- end of constraints ----------
 %% ---------- Monotonicity ----------
+% weighted_U = -(0.5 * ([x1; x2; x3; x4; x5]' * (expReturns' - E_risk_free) / ...
+%     sqrt([x1; x2; x3; x4; x5]' * covMatrix * [x1; x2; x3; x4; x5])) + ...
+%     0.5 * ([x1; x2; x3; x4; x5]' * expReturns' - alpha * ([x1; x2; x3; x4; x5]' * covMatrix * [x1; x2; x3; x4; x5])));
 syms x1 x2 x3 x4;
 objective_function_Df_x1 = diff(objective_function(x1, x2, x3, x4));
 
@@ -45,33 +48,75 @@ objective_function_Df_x1 = diff(objective_function(x1, x2, x3, x4));
     covMatrix);
 
 %% ---------- Boundedness Check ----------
+% 
+% numAssets = size(returns, 2);
+% numPortfolios = 1000000; % Define the number of portfolios to simulate
+% results = zeros(3, numPortfolios);  % Initialize results matrix
+% weightsMatrix = zeros(numPortfolios, numAssets);  % To store weights of each portfolio
+% 
+% for i = 1:numPortfolios
+%     weights = rand(numAssets, 1);  % Randomly generate weights
+%     weights = weights / sum(weights);  % Normalize weights to sum to 1
+%     [preturn,pvolatility] = calc(weights,expReturns,covMatrix);
+%     [S_p,U,weighted_U] = obj(preturn,pvolatility,E_risk_free,alpha);
+% 
+% 
+%     results(1, i) = preturn;  % Store portfolio return
+%     results(2, i) = pvolatility;    % Store portfolio risk
+%     results(3, i) = weighted_U;  % Store weighted objective
+% 
+%     weightsMatrix(i, :) = weights';  % Store the weights
+% end
+% 
+% figure(1)
+% scatter(results(2,:),results(3,:),50,"red")
+% xlabel('Volatility')
+% ylabel('Objective function')
+% 
+% 
+% 
+% [minU,index]=min(results(3,:));
+% corrweights=weightsMatrix(index,:);
 
-numAssets = size(returns, 2);
-numPortfolios = 1000000; % Define the number of portfolios to simulate
-results = zeros(3, numPortfolios);  % Initialize results matrix
-weightsMatrix = zeros(numPortfolios, numAssets);  % To store weights of each portfolio
+%% ---------- Convexity ----------
+%% Define the symbolic variables
+syms x1 x2 x3 x4 x5
 
-for i = 1:numPortfolios
-    weights = rand(numAssets, 1);  % Randomly generate weights
-    weights = weights / sum(weights);  % Normalize weights to sum to 1
-    [preturn,pvolatility] = calc(weights,expReturns,covMatrix);
-    [S_p,U,weighted_U] = obj(preturn,pvolatility,E_risk_free,alpha);
+weights = [x1; x2; x3; x4; x5];
 
- 
-    results(1, i) = preturn;  % Store portfolio return
-    results(2, i) = pvolatility;    % Store portfolio risk
-    results(3, i) = weighted_U;  % Store Sharpe ratio (return/risk)
+expReturnsSym = sym('expReturns', [1, 5]);
 
-    weightsMatrix(i, :) = weights';  % Store the weights
+covMatrixSym = sym('covMatrix', [5, 5]);
+
+[preturn_sym,pvolatility_sym] = calc(weights,expReturnsSym,covMatrixSym);
+
+E_risk_free_sym = sym('E_risk_free');
+
+alpha_sym = sym('alpha');
+
+[S_p_sym,U_sym,weighted_U_sym] = obj(preturn_sym,pvolatility_sym,E_risk_free_sym,alpha_sym);
+
+HessianMatrix = hessian(weighted_U_sym, weights);
+
+weight = [0.2;0.2;0.2;0.2;0.2]; % Change this weightage to check for a non-convex solution
+
+% Substitute numeric values into the Hessian matrix
+HessianMatrixNumeric = vpa(subs(HessianMatrix, ...
+    [expReturnsSym(:); covMatrixSym(:); E_risk_free_sym; alpha_sym ;weights(:)], ...
+    [expReturns(:); covMatrix(:); E_risk_free; alpha ; weight(:)])) ;
+
+
+eigenValues = eig(HessianMatrixNumeric);
+
+% If all eigenvalues are non-negative, the function is convex
+isConvex = all(eigenValues >= 0);
+
+if isConvex
+    disp('The objective function is convex.');
+else
+    disp('The objective function is not convex.');
 end
 
-figure(1)
-scatter(results(2,:),results(3,:),50,"red")
-xlabel('Volatility')
-ylabel('Objective function')
-
-[minU,index]=min(results(3,:));
-corrweights=weightsMatrix(index,:)
 
 % %% ---------- Own Optimiser ----------
 % numAssets = size(returns, 2);  % Number of assets
