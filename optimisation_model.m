@@ -44,11 +44,76 @@ weights = [proportion_cash;proportion_real_estate;proportion_equity;proportion_g
 
 % ---------- end of constraints ----------
 %% ---------- Monotonicity ----------
-% weighted_U = -(0.5 * ([x1; x2; x3; x4; x5]' * (expReturns' - E_risk_free) / ...
-%     sqrt([x1; x2; x3; x4; x5]' * covMatrix * [x1; x2; x3; x4; x5])) + ...
-%     0.5 * ([x1; x2; x3; x4; x5]' * expReturns' - alpha * ([x1; x2; x3; x4; x5]' * covMatrix * [x1; x2; x3; x4; x5])));
-syms x1 x2 x3 x4;
-objective_function_Df_x1 = diff(objective_function(x1, x2, x3, x4));
+syms y1 y3 y4 y5
+assume(y1, "real")
+assume(y3, "real")
+assume(y4, "real")
+assume(y5, "real")
+
+y2 = 1 - y1 - y3 - y4 - y5;
+weights = [y1; y2; y3; y4; y5];
+[E_p,sigma_p] = calc(weights,expReturns,covMatrix);
+[S_p_sym,U_sym,weighted_U_sym] = obj(E_p,sigma_p,E_risk_free,alpha);
+
+Df_1 = vpa(diff(weighted_U_sym, y1));
+Df_3 = vpa(diff(weighted_U_sym, y3));
+Df_4 = vpa(diff(weighted_U_sym, y4));
+Df_5 = vpa(diff(weighted_U_sym, y5));
+
+y_values = linspace(0.1, 0.6, 500);
+
+% Substitute numeric values into the Hessian matrix
+Df_1Numeric = vpa(subs(Df_1, ...
+    [y3; y4; y5], ...
+    [0.1; 0.1; 0.1])) ;
+
+Df_1_func = matlabFunction(Df_1Numeric);
+Df_1_numbers = Df_1_func(y_values);
+
+% Substitute numeric values into the Hessian matrix
+Df_3Numeric = vpa(subs(Df_3, ...
+    [y1; y4; y5], ...
+    [0.1; 0.1; 0.1])) ;
+
+Df_3_func = matlabFunction(Df_3Numeric);
+Df_3_numbers = Df_3_func(y_values);
+
+% Substitute numeric values into the Hessian matrix
+Df_4Numeric = vpa(subs(Df_4, ...
+    [y1; y3; y5], ...
+    [0.1; 0.1; 0.1])) ;
+
+Df_4_func = matlabFunction(Df_4Numeric);
+Df_4_numbers = Df_4_func(y_values);
+
+% Substitute numeric values into the Hessian matrix
+Df_5Numeric = vpa(subs(Df_5, ...
+    [y1; y3; y4], ...
+    [0.1; 0.1; 0.1])) ;
+
+Df_5_func = matlabFunction(Df_5Numeric);
+Df_5_numbers = Df_5_func(y_values);
+
+subplot(2, 2, 1)
+plot(y_values, Df_1_numbers)
+xlabel('Proportion of Cash') 
+ylabel('Gradient') 
+title('Gradient with respect to proportion of cash')
+subplot(2, 2, 2)
+plot(y_values, Df_3_numbers)
+xlabel('Proportion of Equity') 
+ylabel('Gradient') 
+title('Gradient with respect to proportion of equity')
+subplot(2, 2, 3)
+plot(y_values, Df_4_numbers)
+xlabel('Proportion of Gold') 
+ylabel('Gradient') 
+title('Gradient with respect to proportion of gold')
+subplot(2, 2, 4)
+plot(y_values, Df_5_numbers)
+xlabel('Proportion of Tbill') 
+ylabel('Gradient') 
+title('Gradient with respect to proportion of Tbill')
 
 %% ---------- Get return, volatility ----------
 [E_p,sigma_p] = calc([proportion_equity;proportion_tbill;proportion_gold;proportion_cash;proportion_real_estate],expReturns,...
@@ -178,15 +243,11 @@ title('Efficient Frontier');
 legend('Efficient Frontier');
 hold off;
 %% ---------- Function for calculating return and volatility ----------
-<<<<<<< HEAD
+
 function [E_p,sigma_p] = calc(weightmatrix,expReturns,covMatrix)
     E_p = weightmatrix' * expReturns';
-    sigma_p = (weightmatrix' * covMatrix * weightmatrix);
-=======
-function [preturn,pvolatility] = calc(weightmatrix,expReturns,covMatrix)
-    preturn = weightmatrix' * expReturns';
-    pvolatility = sqrt(weightmatrix' * covMatrix * weightmatrix);
->>>>>>> 78388c99a96e347392fb1872ae1d9de8dcd9075a
+    sigma_p = sqrt(weightmatrix' * covMatrix * weightmatrix);
+
 end
 
 %% ---------- Objective functions ----------
@@ -196,12 +257,6 @@ function [S_p,U,weighted_U] = obj(E_p,sigma_p,E_risk_free,alpha)
     S_p = (E_p - E_risk_free)/sigma_p;
     U = E_p - alpha*(sigma_p^2);
     weighted_U = -(0.5 * S_p + 0.5 * U);
-end
-
-function obj = objective_function(x1, x2, x3, x4)
-    obj = -(0.5 * ([x1; x2; x3; x4; 1 - x1 - x2- x3 - x4]' * (expReturns' - E_risk_free) / ...
-    sqrt([x1; x2; x3; x4; 1 - x1 - x2- x3 - x4]' * covMatrix * [x1; x2; x3; x4; 1 - x1 - x2- x3 - x4])) + ...
-    0.5 * ([x1; x2; x3; x4; 1 - x1 - x2- x3 - x4]' * expReturns' - alpha * ([x1; x2; x3; x4; 1 - x1 - x2- x3 - x4]' * covMatrix * [x1; x2; x3; x4; 1 - x1 - x2- x3 - x4])));
 end
 % ---------- end of objective functions ----------
 
