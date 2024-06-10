@@ -37,9 +37,8 @@ proportion_tbill_min = 0.1;
 
 % ---------- end of constraints ----------
 %% ---------- Monotonicity ----------
-weighted_U = -(0.5 * ([x1; x2; x3; x4; x5]' * (expReturns' - E_risk_free) / ...
-    sqrt([x1; x2; x3; x4; x5]' * covMatrix * [x1; x2; x3; x4; x5])) + ...
-    0.5 * ([x1; x2; x3; x4; x5]' * expReturns' - alpha * ([x1; x2; x3; x4; x5]' * covMatrix * [x1; x2; x3; x4; x5])));
+syms x1 x2 x3 x4;
+objective_function_Df_x1 = diff(objective_function(x1, x2, x3, x4));
 
 %% ---------- Get return, volatility ----------
 [E_p,sigma_p] = calc([proportion_equity;proportion_tbill;proportion_gold;proportion_cash;proportion_real_estate],expReturns,...
@@ -152,7 +151,7 @@ corrweights=weightsMatrix(index,:)
 %% ---------- Function for calculating return and volatility ----------
 function [preturn,pvolatility] = calc(weightmatrix,expReturns,covMatrix)
     preturn = weightmatrix' * expReturns';
-    pvolatility=sqrt(weightmatrix' * covMatrix * weightmatrix);
+    pvolatility = sqrt(weightmatrix' * covMatrix * weightmatrix);
 end
 
 %% ---------- Objective functions ----------
@@ -161,7 +160,13 @@ end
 function [S_p,U,weighted_U] = obj(E_p,sigma_p,E_risk_free,alpha)
     S_p = (E_p - E_risk_free)/sigma_p;
     U = E_p - alpha*(sigma_p^2);
-    weighted_U=-(0.5 * S_p + 0.5 * U);
+    weighted_U = -(0.5 * S_p + 0.5 * U);
+end
+
+function obj = objective_function(x1, x2, x3, x4)
+    obj = -(0.5 * ([x1; x2; x3; x4; 1 - x1 - x2- x3 - x4]' * (expReturns' - E_risk_free) / ...
+    sqrt([x1; x2; x3; x4; 1 - x1 - x2- x3 - x4]' * covMatrix * [x1; x2; x3; x4; 1 - x1 - x2- x3 - x4])) + ...
+    0.5 * ([x1; x2; x3; x4; 1 - x1 - x2- x3 - x4]' * expReturns' - alpha * ([x1; x2; x3; x4; 1 - x1 - x2- x3 - x4]' * covMatrix * [x1; x2; x3; x4; 1 - x1 - x2- x3 - x4])));
 end
 % ---------- end of objective functions ----------
 
