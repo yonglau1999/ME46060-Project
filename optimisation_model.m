@@ -17,7 +17,15 @@ global alpha
 alpha = 0.5;
 
 % Constraint 2: Maximum volatility
+global sigma_p_max
 sigma_p_max = 0.1575;
+
+% Constraint 3: Diversification
+proportion_cash_min = 0.1;
+proportion_real_estate_min = 0.1;
+proportion_equity_min = 0.1;
+proportion_gold_min = 0.1;
+proportion_tbill_min = 0.1;
 
 % ---------- End of Constants ----------
 
@@ -183,7 +191,7 @@ z2 = 1 - z1 - z3 - z4 - z5;
 weights = [z1; z2; z3; z4; z5];
 
 [E_p,sigma_p] = calc(weights,expReturns,covMatrix);
-[S_p_sym,U_sym,weighted_U_sym] = obj(E_p,sigma_p,E_risk_free,alpha);
+[~,~,weighted_U_sym] = obj(E_p,sigma_p,E_risk_free,alpha);
 
 Df_1 = vpa((z1/weighted_U_sym)*diff(weighted_U_sym, z1));
 Df_3 = vpa((z3/weighted_U_sym)*diff(weighted_U_sym, z3));
@@ -528,7 +536,7 @@ end
 
 % ---------- Nonlinear constraints ----------
 function [c,ceq] = nonlinear_constraints(x)
-global expReturns E_risk_free covMatrix alpha sigma_p_max
+global expReturns covMatrix sigma_p_max
 
 syms x1 x2 x3 x4 x5
 assume(x1, "real")
@@ -538,7 +546,7 @@ assume(x4, "real")
 assume(x5, "real")
 
 weights = [x1; x2; x3; x4; x5];
-[E_p,sigma_p] = calc(weights,expReturns,covMatrix);
+[~,sigma_p] = calc(weights,expReturns,covMatrix);
 
 % Substitute numeric values into volatility function
 sigma_p_Numeric = subs(sigma_p, ...
