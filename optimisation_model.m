@@ -13,8 +13,8 @@ covMatrix = cov(returns);
 
 %% ---------- design variables ----------
 
-proportion_cash = 0.1;
-proportion_real_estate = 0.3;
+proportion_cash = 0.3;
+proportion_real_estate = 0.1;
 proportion_equity = 0.2;
 proportion_gold = 0.2;
 proportion_tbill = 0.2;
@@ -27,6 +27,15 @@ alpha = 0.5;
 
 %% ---------- Testing ----------
 
+weightmatrix = [proportion_cash;proportion_real_estate;proportion_equity;proportion_gold;proportion_tbill];
+
+[E_p,sigma_p] = calc(weightmatrix,expReturns,covMatrix)
+
+
+[S_p,U,weighted_U] = obj(E_p,sigma_p,E_risk_free,alpha);
+
+
+
 %% ---------- constraints ----------
 
 % Constraint 1: Sum of proportions = 1
@@ -34,7 +43,7 @@ proportion_real_estate = 1 - proportion_equity - proportion_tbill - proportion_g
 
 
 % Constraint 2: Maximum volatility
-sigma_p_max = 1;
+sigma_p_max = 0.1575;
 
 
 % Constraint 3 : Diversification
@@ -184,81 +193,81 @@ proportion_tbill_min = 0.1
 
 
 %% ---------- Own Optimiser ----------
-returns = returns (:,1:4);
-numAssets = size(returns, 2);  % Number of assets, removing T-bills (Non risky)
-expReturns1 = expReturns(1:4);    % Expected returns of each asset
-covMatrix = cov(returns);      % Covariance matrix of the returns
-
-
-numPortfolios = 5000000; % Define the number of portfolios to simulate
-results = zeros(3, numPortfolios);  % Initialize results matrix
-weightsMatrix = zeros(numPortfolios, numAssets);  % To store weights of each portfolio
-
-for i = 1:numPortfolios
-    weights = rand(numAssets, 1);  % Randomly generate weights
-    weights = weights / sum(weights);  % Normalize weights to sum to 1
-    portfolioReturn = weights' * expReturns1';  % Expected return of the portfolio
-    portfolioRisk = sqrt(weights' * covMatrix * weights);  % Risk (standard deviation) of the portfolio
-
-    results(1, i) = portfolioReturn;  % Store portfolio return
-    results(2, i) = portfolioRisk;    % Store portfolio risk
-    results(3, i) = portfolioReturn / portfolioRisk;  % Store Sharpe ratio (return/risk)
-
-    weightsMatrix(i, :) = weights';  % Store the weights
-end
-
-[~, maxIndex] = max(results(3, :)) % Identify the portfolio with the highest Sharpe ratio
-optimalWeights = weightsMatrix(maxIndex, :);
-
-disp('Optimal Weights for the Portfolio with the Highest Sharpe Ratio:'); 
-for i = 1:numAssets
-    fprintf('%s %.2f%%\n', portfoliocomponents(i,:), optimalWeights(i) * 100);
-end
-
-uniqueReturns = unique(round(results(1, :), 4));% Find unique levels of return and round to 4 decimal places
-
-efficientVolatility = zeros(size(uniqueReturns));% Initialize arrays to store volatility and return for the efficient frontier
-efficientReturn = zeros(size(uniqueReturns));
-
-for i = 1:length(uniqueReturns)
-    % Find indices of portfolios with the current return level
-    indices = find(round(results(1, :), 4) == uniqueReturns(i));
-
-    % Determine the portfolio with the lowest volatility among these
-    [~, minIndex] = min(results(2, indices));
-    efficientVolatility(i) = results(2, indices(minIndex));
-    efficientReturn(i) = uniqueReturns(i);
-end
-
-% Exclude return levels below 0
-efficientVolatility(efficientReturn < 0) = [];
-efficientReturn(efficientReturn < 0) = [];
-
-% Plot the efficient frontier and the fitted curve
-figure(1);
-scatter(efficientVolatility, efficientReturn, 50, 'r', 'filled'); % Plot the efficient frontier
-hold on;
-
-xlabel('Volatility (Standard Deviation)');
-ylabel('Return');
-title('Efficient Frontier');
-legend('Efficient Frontier');
-hold off;
+% returns = returns (:,1:4);
+% numAssets = size(returns, 2);  % Number of assets, removing T-bills (Non risky)
+% expReturns1 = expReturns(1:4);    % Expected returns of each asset
+% covMatrix = cov(returns);      % Covariance matrix of the returns
+% 
+% 
+% numPortfolios = 5000000; % Define the number of portfolios to simulate
+% results = zeros(3, numPortfolios);  % Initialize results matrix
+% weightsMatrix = zeros(numPortfolios, numAssets);  % To store weights of each portfolio
+% 
+% for i = 1:numPortfolios
+%     weights = rand(numAssets, 1);  % Randomly generate weights
+%     weights = weights / sum(weights);  % Normalize weights to sum to 1
+%     portfolioReturn = weights' * expReturns1';  % Expected return of the portfolio
+%     portfolioRisk = sqrt(weights' * covMatrix * weights);  % Risk (standard deviation) of the portfolio
+% 
+%     results(1, i) = portfolioReturn;  % Store portfolio return
+%     results(2, i) = portfolioRisk;    % Store portfolio risk
+%     results(3, i) = portfolioReturn / portfolioRisk;  % Store Sharpe ratio (return/risk)
+% 
+%     weightsMatrix(i, :) = weights';  % Store the weights
+% end
+% 
+% [~, maxIndex] = max(results(3, :)) % Identify the portfolio with the highest Sharpe ratio
+% optimalWeights = weightsMatrix(maxIndex, :);
+% 
+% disp('Optimal Weights for the Portfolio with the Highest Sharpe Ratio:'); 
+% for i = 1:numAssets
+%     fprintf('%s %.2f%%\n', portfoliocomponents(i,:), optimalWeights(i) * 100);
+% end
+% 
+% uniqueReturns = unique(round(results(1, :), 4));% Find unique levels of return and round to 4 decimal places
+% 
+% efficientVolatility = zeros(size(uniqueReturns));% Initialize arrays to store volatility and return for the efficient frontier
+% efficientReturn = zeros(size(uniqueReturns));
+% 
+% for i = 1:length(uniqueReturns)
+%     % Find indices of portfolios with the current return level
+%     indices = find(round(results(1, :), 4) == uniqueReturns(i));
+% 
+%     % Determine the portfolio with the lowest volatility among these
+%     [~, minIndex] = min(results(2, indices));
+%     efficientVolatility(i) = results(2, indices(minIndex));
+%     efficientReturn(i) = uniqueReturns(i);
+% end
+% 
+% % Exclude return levels below 0
+% efficientVolatility(efficientReturn < 0) = [];
+% efficientReturn(efficientReturn < 0) = [];
+% 
+% % Plot the efficient frontier and the fitted curve
+% figure(1);
+% scatter(efficientVolatility, efficientReturn, 50, 'r', 'filled'); % Plot the efficient frontier
+% hold on;
+% 
+% xlabel('Volatility (Standard Deviation)');
+% ylabel('Return');
+% title('Efficient Frontier');
+% legend('Efficient Frontier');
+% hold off;
 
 %% ---------- Nelder-Mead method ----------
-% x0 = [0.2, 0.2, 0.2, 0.2,0.2]; % Starting point
-% 
-% % Define the objective function handle
-% objective_function = @(weights) barrier_function(weights, sigma_p_max, ...
-%     proportion_cash_min, proportion_real_estate_min, ...
-%     proportion_equity_min, proportion_gold_min, proportion_tbill_min);
-% 
-% % Call fminsearch
-% options = optimset('Display', 'iter', 'FunValCheck', 'on', 'MaxIter', 100000, 'PlotFcns', @optimplotfval,'TolX',1e-20,'TolFun',1e-20);
-% optimal_weights = fminsearch(objective_function, x0, options);
-% disp(sum(optimal_weights))
-% disp('Optimal Weights:');
-% disp(optimal_weights);
+x0 = [0.1, 0.25, 0.125, 0.1,0.3]; % Starting point
+
+% Define the objective function handle
+objective_function = @(weights) barrier_function(weights, sigma_p_max, ...
+    proportion_cash_min, proportion_real_estate_min, ...
+    proportion_equity_min, proportion_gold_min, proportion_tbill_min);
+
+% Call fminsearch
+options = optimset('Display', 'iter', 'FunValCheck', 'on', 'MaxIter', 100000, 'PlotFcns', @optimplotfval,'TolX',1e-20,'TolFun',1e-20);
+optimal_weights = fminsearch(objective_function, x0, options);
+disp(sum(optimal_weights))
+disp('Optimal Weights:');
+disp(optimal_weights);
 
 
 %% ---------- Function for calculating return and volatility ----------
