@@ -6,29 +6,13 @@ returnsTable=readtable('Compiled_Returns_Data.csv');
 returns = table2array(returnsTable(:,1:5));
 
 global expReturns E_risk_free covMatrix;
-% expReturns = mean (returns);
 expReturns = [0.002, 0.096, 0.113, 0.106, 0.03];
 E_risk_free = 0.03;
 covMatrix = cov(returns);
 
-
-%% ---------- design variables ----------
-
-proportion_cash = 0.1;
-proportion_real_estate = 0.3;
-proportion_equity = 0.2;
-proportion_gold = 0.2;
-proportion_tbill = 0.2;
-
-global alpha
-alpha = 0.5;
-
 % ---------- end of design variables ----------
 
-
-%% ---------- Testing ----------
-
-%% ---------- constraints ----------
+%% ---------- Constraints ----------
 
 % Constraint 1: Sum of proportions = 1
 proportion_real_estate = 1 - proportion_equity - proportion_tbill - proportion_gold - proportion_cash;
@@ -46,6 +30,11 @@ proportion_gold_min = 0.1;
 proportion_tbill_min = 0.1;
 
 % ---------- end of constraints ----------
+
+%% ---------- Constants ----------
+global alpha
+alpha = 0.5;
+% ---------- end of constants ----------
 %% ---------- Objective function against weightage ----------
 % syms y1 y3 y4 y5
 % assume(y1, "real")
@@ -113,6 +102,7 @@ proportion_tbill_min = 0.1;
 % ylabel('Objective Function')   
 % title('Objective function value with respect to proportion of Tbill')
 
+% ---------- end of objective function against weightage ----------
 
 %% ---------- Monotonicity ----------
 % syms y1 y3 y4 y5
@@ -186,100 +176,83 @@ proportion_tbill_min = 0.1;
 % ylabel('Gradient') 
 % title('Gradient with respect to proportion of Tbill')
 
-options = optimoptions('fmincon','SpecifyObjectiveGradient',true);
-
-fun = @rosentwo;
-x0 = [0.3, 0.2, 0.1, 0.1, 0.1];
-A = [];
-b = [];
-Aeq = [1, 1, 1, 1, 1];
-beq = [1];
-lb = [0.1, 0.1, 0.1, 0.1, 0.1];
-ub = [0.6, 0.6, 0.6, 0.6, 0.6];
-nonlcon = [];
-x = fmincon(fun,x0,A,b,Aeq,beq,lb,ub,nonlcon,options)
-
-x0 = [0.3, 0.2, 0.1, 0.1, 0.1];
-valid = checkGradients(@rosentwo,x0,Display="on")
-
+% ---------- end of monotonicity ----------
 %% ---------- Design sensitivities ----------
 
-syms z1 z3 z4 z5
-assume(z1, "real")
-assume(z3, "real")
-assume(z4, "real")
-assume(z5, "real")
+% syms z1 z3 z4 z5
+% assume(z1, "real")
+% assume(z3, "real")
+% assume(z4, "real")
+% assume(z5, "real")
+% 
+% z2 = 1 - z1 - z3 - z4 - z5;
+% weights = [z1; z2; z3; z4; z5];
+% [E_p,sigma_p] = calc(weights,expReturns,covMatrix);
+% [S_p_sym,U_sym,weighted_U_sym] = obj(E_p,sigma_p,E_risk_free,alpha);
+% 
+% 
+% 
+% Df_1 = vpa((z1/weighted_U_sym)*diff(weighted_U_sym, z1));
+% Df_3 = vpa((z3/weighted_U_sym)*diff(weighted_U_sym, z3));
+% Df_4 = vpa((z4/weighted_U_sym)*diff(weighted_U_sym, z4));
+% Df_5 = vpa((z5/weighted_U_sym)*diff(weighted_U_sym, z5));
+% 
+% z_values = linspace(0.1, 0.2, 500);
+% 
+% % Substitute numeric values into the Hessian matrix
+% Df_1Numeric = vpa(subs(Df_1, ...
+%     [z3; z4; z5], ...
+%     [0.2; 0.2; 0.2])) ;
+% 
+% Df_1_func = matlabFunction(Df_1Numeric);
+% Df_1_numbers = Df_1_func(z_values);
+% 
+% % Substitute numeric values into the Hessian matrix
+% Df_3Numeric = vpa(subs(Df_3, ...
+%     [z1; z4; z5], ...
+%     [0.2 ;0.2; 0.2])) ;
+% 
+% Df_3_func = matlabFunction(Df_3Numeric);
+% Df_3_numbers = Df_3_func(z_values);
+% 
+% % Substitute numeric values into the Hessian matrix
+% Df_4Numeric = vpa(subs(Df_4, ...
+%     [z1; z3; z5], ...
+%     [0.2; 0.2; 0.2])) ;
+% 
+% Df_4_func = matlabFunction(Df_4Numeric);
+% Df_4_numbers = Df_4_func(z_values);
+% 
+% % Substitute numeric values into the Hessian matrix
+% Df_5Numeric = vpa(subs(Df_5, ...
+%     [z1; z3; z4], ...
+%     [0.2; 0.2; 0.2])) ;
+% 
+% Df_5_func = matlabFunction(Df_5Numeric);
+% Df_5_numbers = Df_5_func(z_values);
+% 
+% subplot(2, 2, 1)
+% plot(z_values, Df_1_numbers)
+% xlabel('Proportion of Cash') 
+% ylabel('Log Gradient') 
+% title('Log Gradient with respect to proportion of cash')
+% subplot(2, 2, 2)
+% plot(z_values, Df_3_numbers)
+% xlabel('Proportion of Equity') 
+% ylabel('Log Gradient') 
+% title('Log Gradient with respect to proportion of equity')
+% subplot(2, 2, 3)
+% plot(z_values, Df_4_numbers)
+% xlabel('Proportion of Gold') 
+% ylabel('Log Gradient') 
+% title('Log Gradient with respect to proportion of gold')
+% subplot(2, 2, 4)
+% plot(z_values, Df_5_numbers)
+% xlabel('Proportion of Tbill') 
+% ylabel('Log Gradient') 
+% title('Log Gradient with respect to proportion of Tbill')
 
-z2 = 1 - z1 - z3 - z4 - z5;
-weights = [z1; z2; z3; z4; z5];
-[E_p,sigma_p] = calc(weights,expReturns,covMatrix);
-[S_p_sym,U_sym,weighted_U_sym] = obj(E_p,sigma_p,E_risk_free,alpha);
-
-
-
-Df_1 = vpa((z1/weighted_U_sym)*diff(weighted_U_sym, z1));
-Df_3 = vpa((z3/weighted_U_sym)*diff(weighted_U_sym, z3));
-Df_4 = vpa((z4/weighted_U_sym)*diff(weighted_U_sym, z4));
-Df_5 = vpa((z5/weighted_U_sym)*diff(weighted_U_sym, z5));
-
-z_values = linspace(0.1, 0.2, 500);
-
-% Substitute numeric values into the Hessian matrix
-Df_1Numeric = vpa(subs(Df_1, ...
-    [z3; z4; z5], ...
-    [0.2; 0.2; 0.2])) ;
-
-Df_1_func = matlabFunction(Df_1Numeric);
-Df_1_numbers = Df_1_func(z_values);
-
-% Substitute numeric values into the Hessian matrix
-Df_3Numeric = vpa(subs(Df_3, ...
-    [z1; z4; z5], ...
-    [0.2 ;0.2; 0.2])) ;
-
-Df_3_func = matlabFunction(Df_3Numeric);
-Df_3_numbers = Df_3_func(z_values);
-
-% Substitute numeric values into the Hessian matrix
-Df_4Numeric = vpa(subs(Df_4, ...
-    [z1; z3; z5], ...
-    [0.2; 0.2; 0.2])) ;
-
-Df_4_func = matlabFunction(Df_4Numeric);
-Df_4_numbers = Df_4_func(z_values);
-
-% Substitute numeric values into the Hessian matrix
-Df_5Numeric = vpa(subs(Df_5, ...
-    [z1; z3; z4], ...
-    [0.2; 0.2; 0.2])) ;
-
-Df_5_func = matlabFunction(Df_5Numeric);
-Df_5_numbers = Df_5_func(z_values);
-
-subplot(2, 2, 1)
-plot(z_values, Df_1_numbers)
-xlabel('Proportion of Cash') 
-ylabel('Log Gradient') 
-title('Log Gradient with respect to proportion of cash')
-subplot(2, 2, 2)
-plot(z_values, Df_3_numbers)
-xlabel('Proportion of Equity') 
-ylabel('Log Gradient') 
-title('Log Gradient with respect to proportion of equity')
-subplot(2, 2, 3)
-plot(z_values, Df_4_numbers)
-xlabel('Proportion of Gold') 
-ylabel('Log Gradient') 
-title('Log Gradient with respect to proportion of gold')
-subplot(2, 2, 4)
-plot(z_values, Df_5_numbers)
-xlabel('Proportion of Tbill') 
-ylabel('Log Gradient') 
-title('Log Gradient with respect to proportion of Tbill')
-
-%% ---------- Get return, volatility ----------
-% [E_p,sigma_p] = calc([proportion_equity;proportion_tbill;proportion_gold;proportion_cash;proportion_real_estate],expReturns,...
-%     covMatrix);
+% ---------- end of design sensitivities ----------
 
 %% ---------- Boundedness Check ----------
 % 
@@ -312,6 +285,7 @@ title('Log Gradient with respect to proportion of Tbill')
 % [minU,index]=min(results(3,:));
 % corrweights=weightsMatrix(index,:);
 
+% ---------- end of boundedness check ----------
 %% ---------- Convexity ----------
 % syms x1 x2 x3 x4 x5
 % 
@@ -342,8 +316,8 @@ title('Log Gradient with respect to proportion of Tbill')
 %     disp('The objective function is not convex.');
 % end
 
-
-%% ---------- Own Optimiser ----------
+% ---------- end of convexity ----------
+%% ---------- Markowitz Efficient Frontier ----------
 % returns = returns (:,1:4);
 % numAssets = size(returns, 2);  % Number of assets, removing T-bills (Non risky)
 % expReturns1 = expReturns(1:4);    % Expected returns of each asset
@@ -405,6 +379,7 @@ title('Log Gradient with respect to proportion of Tbill')
 % legend('Efficient Frontier');
 % hold off;
 
+% ---------- end of markowitz efficient frontier ----------
 %% ---------- Nelder-Mead method ----------
 % x0 = [0.2, 0.2, 0.2, 0.2,0.2]; % Starting point
 % 
@@ -420,7 +395,23 @@ title('Log Gradient with respect to proportion of Tbill')
 % disp('Optimal Weights:');
 % disp(optimal_weights);
 
+% ---------- end of nelder-mead method ----------
+%% ---------- SQP Method ----------
+options = optimoptions('fmincon', 'SpecifyObjectiveGradient', true, 'Display', 'iter-detailed');
 
+x0 = [0.15, 0.05, 0.5, 0.25, 0.05];
+Aeq = [1, 1, 1, 1, 1];
+beq = 1;
+lb = [0.1, 0.1, 0.1, 0.1, 0.1];
+ub = [0.6, 0.6, 0.6, 0.6, 0.6];
+x = fmincon(@rosentwo, x0, [], [], Aeq, beq, lb, ub, @nonlinearConstraints, options);
+
+valid = checkGradients(@rosentwo,x0,Display="on");
+
+disp('Optimal Weights:');
+disp(x);
+
+% ---------- end of SQP method ----------
 %% ---------- Function for calculating return and volatility ----------
 
 function [E_p,sigma_p] = calc(weightmatrix,expReturns,covMatrix)
@@ -430,7 +421,7 @@ function [E_p,sigma_p] = calc(weightmatrix,expReturns,covMatrix)
 
 end
 
-%% ---------- Objective functions ----------
+%% ---------- Objective function ----------
 
 %Sharpe Ratio and Utility
 function [S_p,U,weighted_U] = obj(E_p,sigma_p,E_risk_free,alpha)
@@ -439,6 +430,7 @@ function [S_p,U,weighted_U] = obj(E_p,sigma_p,E_risk_free,alpha)
     weighted_U = -(0.5 * S_p + 0.5 * U);
 end
 
+% ---------- end of objective function----------
 %% ---------- Creating barrier function ----------
 
 function F = barrier_function(weights, sigma_p_max, proportion_cash_min, proportion_real_estate_min, ...
@@ -481,7 +473,8 @@ function F = barrier_function(weights, sigma_p_max, proportion_cash_min, proport
     end
 end
 
-%% ---------- Creating barrier function ----------
+% ---------- end of barrier function against weightage ----------
+%% ---------- Creating objective and gradient ----------
 function [f,g] = rosentwo(x)
 global expReturns E_risk_free covMatrix alpha
 
@@ -499,7 +492,8 @@ weights = [x1; x2; x3; x4; x5];
 weighted_U_Numeric = subs(weighted_U_sym, ...
     [x1; x2; x3; x4; x5], ...
      [x(1); x(2); x(3); x(4); x(5)]) ;
-f = double(weighted_U_Numeric)
+
+f = double(weighted_U_Numeric);
 
 Df_1 = diff(weighted_U_sym, x1);
 Df_2 = diff(weighted_U_sym, x2);
@@ -512,22 +506,22 @@ Df_1Numeric = subs(Df_1, ...
      [x(1); x(2); x(3); x(4); x(5)]) ;
 Df_1Value = double(Df_1Numeric);
 
-Df_2Numeric = subs(Df_1, ...
+Df_2Numeric = subs(Df_2, ...
     [x1; x2; x3; x4; x5], ...
      [x(1); x(2); x(3); x(4); x(5)]) ;
 Df_2Value = double(Df_2Numeric);
 
-Df_3Numeric = subs(Df_1, ...
+Df_3Numeric = subs(Df_3, ...
     [x1; x2; x3; x4; x5], ...
      [x(1); x(2); x(3); x(4); x(5)]) ;
 Df_3Value = double(Df_3Numeric);
 
-Df_4Numeric = subs(Df_1, ...
+Df_4Numeric = subs(Df_4, ...
     [x1; x2; x3; x4; x5], ...
      [x(1); x(2); x(3); x(4); x(5)]) ;
 Df_4Value = double(Df_4Numeric);
 
-Df_5Numeric = subs(Df_1, ...
+Df_5Numeric = subs(Df_5, ...
     [x1; x2; x3; x4; x5], ...
      [x(1); x(2); x(3); x(4); x(5)]) ;
 Df_5Value = double(Df_5Numeric);
@@ -535,3 +529,16 @@ Df_5Value = double(Df_5Numeric);
 g = [Df_1Value; Df_2Value; Df_3Value; Df_4Value; Df_5Value];
 
 end
+
+% ---------- end of objective function against weightage ----------
+%% ---------- Nonlinear constraints ----------
+function [c, ceq] = nonlinearConstraints(x)
+    global expReturns covMatrix sigma_p_max
+    
+    weightMatrix = [x(1); x(2); x(3); x(4); x(5)];
+    [~, sigma_p] = calc(weightMatrix, expReturns, covMatrix);
+    c = sigma_p - sigma_p_max;
+    ceq = [];
+end
+
+% ---------- end of nonlinear constraints ----------
