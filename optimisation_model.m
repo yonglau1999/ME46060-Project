@@ -6,6 +6,7 @@ returnsTable=readtable('Compiled_Returns_Data.csv');
 returns = table2array(returnsTable(:,1:5));
 
 global expReturns E_risk_free covMatrix;
+% expReturns = mean (returns);
 expReturns = [0.002, 0.096, 0.113, 0.106, 0.03];
 E_risk_free = 0.03;
 covMatrix = cov(returns);
@@ -34,7 +35,7 @@ proportion_real_estate = 1 - proportion_equity - proportion_tbill - proportion_g
 
 
 % Constraint 2: Maximum volatility
-sigma_p_max = 1;
+sigma_p_max = 0.1575;
 
 
 % Constraint 3 : Diversification
@@ -42,9 +43,77 @@ proportion_cash_min = 0.1;
 proportion_real_estate_min = 0.1;
 proportion_equity_min = 0.1;
 proportion_gold_min = 0.1;
-proportion_tbill_min = 0.1
+proportion_tbill_min = 0.1;
 
 % ---------- end of constraints ----------
+%% ---------- Objective function against weightage ----------
+% syms y1 y3 y4 y5
+% assume(y1, "real")
+% assume(y3, "real")
+% assume(y4, "real")
+% assume(y5, "real")
+% 
+% y2 = 1 - y1 - y3 - y4 - y5;
+% weights = [y1; y2; y3; y4; y5];
+% [E_p,sigma_p] = calc(weights,expReturns,covMatrix);
+% [S_p_sym,U_sym,weighted_U_sym] = obj(E_p,sigma_p,E_risk_free,alpha);
+% 
+% y_values = linspace(0.1, 0.6, 500);
+% 
+% % Substitute numeric values into the Hessian matrix
+% Df_1Numeric = vpa(subs(weighted_U_sym, ...
+%     [y3; y4; y5], ...
+%     [0.1; 0.1; 0.1])) ;
+% 
+% Df_1_func = matlabFunction(Df_1Numeric);
+% Df_1_numbers = Df_1_func(y_values);
+% 
+% % Substitute numeric values into the Hessian matrix
+% Df_3Numeric = vpa(subs(weighted_U_sym, ...
+%     [y1; y4; y5], ...
+%      [0.1; 0.1; 0.1])) ;
+% 
+% Df_3_func = matlabFunction(Df_3Numeric);
+% Df_3_numbers = Df_3_func(y_values);
+% 
+% % Substitute numeric values into the Hessian matrix
+% Df_4Numeric = vpa(subs(weighted_U_sym, ...
+%     [y1; y3; y5], ...
+%      [0.1; 0.1; 0.1])) ;
+% 
+% Df_4_func = matlabFunction(Df_4Numeric);
+% Df_4_numbers = Df_4_func(y_values);
+% 
+% % Substitute numeric values into the Hessian matrix
+% Df_5Numeric = vpa(subs(weighted_U_sym, ...
+%     [y1; y3; y4], ...
+%      [0.1; 0.1; 0.1])) ;
+% 
+% Df_5_func = matlabFunction(Df_5Numeric);
+% Df_5_numbers = Df_5_func(y_values);
+% 
+% subplot(2, 2, 1)
+% plot(y_values, Df_1_numbers)
+% xlabel('Weightage') 
+% ylabel('Objective Function') 
+% title('Objective function value with respect to proportion of cash')
+% subplot(2, 2, 2)
+% plot(y_values, Df_3_numbers)
+% xlabel('Weightage') 
+% ylabel('Objective Function') 
+% title('Objective function value with respect to proportion of equity')
+% subplot(2, 2, 3)
+% plot(y_values, Df_4_numbers)
+% xlabel('Weightage') 
+% ylabel('Objective Function')  
+% title('Objective function value with respect to proportion of gold')
+% subplot(2, 2, 4)
+% plot(y_values, Df_5_numbers)
+% xlabel('Weightage') 
+% ylabel('Objective Function')   
+% title('Objective function value with respect to proportion of Tbill')
+
+
 %% ---------- Monotonicity ----------
 % syms y1 y3 y4 y5
 % assume(y1, "real")
@@ -62,7 +131,7 @@ proportion_tbill_min = 0.1
 % Df_4 = vpa(diff(weighted_U_sym, y4));
 % Df_5 = vpa(diff(weighted_U_sym, y5));
 % 
-% y_values = linspace(0.1, 0.6, 500);
+% y_values = linspace(0.1, 0.2, 500);
 % 
 % % Substitute numeric values into the Hessian matrix
 % Df_1Numeric = vpa(subs(Df_1, ...
@@ -75,7 +144,7 @@ proportion_tbill_min = 0.1
 % % Substitute numeric values into the Hessian matrix
 % Df_3Numeric = vpa(subs(Df_3, ...
 %     [y1; y4; y5], ...
-%     [0.1; 0.1; 0.1])) ;
+%     [0.2; 0.2; 0.2])) ;
 % 
 % Df_3_func = matlabFunction(Df_3Numeric);
 % Df_3_numbers = Df_3_func(y_values);
@@ -83,7 +152,7 @@ proportion_tbill_min = 0.1
 % % Substitute numeric values into the Hessian matrix
 % Df_4Numeric = vpa(subs(Df_4, ...
 %     [y1; y3; y5], ...
-%     [0.1; 0.1; 0.1])) ;
+%     [0.2; 0.2; 0.2])) ;
 % 
 % Df_4_func = matlabFunction(Df_4Numeric);
 % Df_4_numbers = Df_4_func(y_values);
@@ -91,7 +160,7 @@ proportion_tbill_min = 0.1
 % % Substitute numeric values into the Hessian matrix
 % Df_5Numeric = vpa(subs(Df_5, ...
 %     [y1; y3; y4], ...
-%     [0.1; 0.1; 0.1])) ;
+%     [0.2; 0.2; 0.2])) ;
 % 
 % Df_5_func = matlabFunction(Df_5Numeric);
 % Df_5_numbers = Df_5_func(y_values);
@@ -116,6 +185,83 @@ proportion_tbill_min = 0.1
 % xlabel('Proportion of Tbill') 
 % ylabel('Gradient') 
 % title('Gradient with respect to proportion of Tbill')
+
+
+%% ---------- Design sensitivities ----------
+
+syms z1 z3 z4 z5
+assume(z1, "real")
+assume(z3, "real")
+assume(z4, "real")
+assume(z5, "real")
+
+z2 = 1 - z1 - z3 - z4 - z5;
+weights = [z1; z2; z3; z4; z5];
+[E_p,sigma_p] = calc(weights,expReturns,covMatrix);
+[S_p_sym,U_sym,weighted_U_sym] = obj(E_p,sigma_p,E_risk_free,alpha);
+
+
+
+Df_1 = vpa((z1/weighted_U_sym)*diff(weighted_U_sym, z1));
+Df_3 = vpa((z3/weighted_U_sym)*diff(weighted_U_sym, z3));
+Df_4 = vpa((z4/weighted_U_sym)*diff(weighted_U_sym, z4));
+Df_5 = vpa((z5/weighted_U_sym)*diff(weighted_U_sym, z5));
+
+z_values = linspace(0.1, 0.2, 500);
+
+% Substitute numeric values into the Hessian matrix
+Df_1Numeric = vpa(subs(Df_1, ...
+    [z3; z4; z5], ...
+    [0.2; 0.2; 0.2])) ;
+
+Df_1_func = matlabFunction(Df_1Numeric);
+Df_1_numbers = Df_1_func(z_values);
+
+% Substitute numeric values into the Hessian matrix
+Df_3Numeric = vpa(subs(Df_3, ...
+    [z1; z4; z5], ...
+    [0.2 ;0.2; 0.2])) ;
+
+Df_3_func = matlabFunction(Df_3Numeric);
+Df_3_numbers = Df_3_func(z_values);
+
+% Substitute numeric values into the Hessian matrix
+Df_4Numeric = vpa(subs(Df_4, ...
+    [z1; z3; z5], ...
+    [0.2; 0.2; 0.2])) ;
+
+Df_4_func = matlabFunction(Df_4Numeric);
+Df_4_numbers = Df_4_func(z_values);
+
+% Substitute numeric values into the Hessian matrix
+Df_5Numeric = vpa(subs(Df_5, ...
+    [z1; z3; z4], ...
+    [0.2; 0.2; 0.2])) ;
+
+Df_5_func = matlabFunction(Df_5Numeric);
+Df_5_numbers = Df_5_func(z_values);
+
+subplot(2, 2, 1)
+plot(z_values, Df_1_numbers)
+xlabel('Proportion of Cash') 
+ylabel('Log Gradient') 
+title('Log Gradient with respect to proportion of cash')
+subplot(2, 2, 2)
+plot(z_values, Df_3_numbers)
+xlabel('Proportion of Equity') 
+ylabel('Log Gradient') 
+title('Log Gradient with respect to proportion of equity')
+subplot(2, 2, 3)
+plot(z_values, Df_4_numbers)
+xlabel('Proportion of Gold') 
+ylabel('Log Gradient') 
+title('Log Gradient with respect to proportion of gold')
+subplot(2, 2, 4)
+plot(z_values, Df_5_numbers)
+xlabel('Proportion of Tbill') 
+ylabel('Log Gradient') 
+title('Log Gradient with respect to proportion of Tbill')
+
 
 %% ---------- Get return, volatility ----------
 % [E_p,sigma_p] = calc([proportion_equity;proportion_tbill;proportion_gold;proportion_cash;proportion_real_estate],expReturns,...
@@ -184,66 +330,66 @@ proportion_tbill_min = 0.1
 
 
 %% ---------- Own Optimiser ----------
-returns = returns (:,1:4);
-numAssets = size(returns, 2);  % Number of assets, removing T-bills (Non risky)
-expReturns1 = expReturns(1:4);    % Expected returns of each asset
-covMatrix = cov(returns);      % Covariance matrix of the returns
-
-
-numPortfolios = 5000000; % Define the number of portfolios to simulate
-results = zeros(3, numPortfolios);  % Initialize results matrix
-weightsMatrix = zeros(numPortfolios, numAssets);  % To store weights of each portfolio
-
-for i = 1:numPortfolios
-    weights = rand(numAssets, 1);  % Randomly generate weights
-    weights = weights / sum(weights);  % Normalize weights to sum to 1
-    portfolioReturn = weights' * expReturns1';  % Expected return of the portfolio
-    portfolioRisk = sqrt(weights' * covMatrix * weights);  % Risk (standard deviation) of the portfolio
-
-    results(1, i) = portfolioReturn;  % Store portfolio return
-    results(2, i) = portfolioRisk;    % Store portfolio risk
-    results(3, i) = portfolioReturn / portfolioRisk;  % Store Sharpe ratio (return/risk)
-
-    weightsMatrix(i, :) = weights';  % Store the weights
-end
-
-[~, maxIndex] = max(results(3, :)) % Identify the portfolio with the highest Sharpe ratio
-optimalWeights = weightsMatrix(maxIndex, :);
-
-disp('Optimal Weights for the Portfolio with the Highest Sharpe Ratio:'); 
-for i = 1:numAssets
-    fprintf('%s %.2f%%\n', portfoliocomponents(i,:), optimalWeights(i) * 100);
-end
-
-uniqueReturns = unique(round(results(1, :), 4));% Find unique levels of return and round to 4 decimal places
-
-efficientVolatility = zeros(size(uniqueReturns));% Initialize arrays to store volatility and return for the efficient frontier
-efficientReturn = zeros(size(uniqueReturns));
-
-for i = 1:length(uniqueReturns)
-    % Find indices of portfolios with the current return level
-    indices = find(round(results(1, :), 4) == uniqueReturns(i));
-
-    % Determine the portfolio with the lowest volatility among these
-    [~, minIndex] = min(results(2, indices));
-    efficientVolatility(i) = results(2, indices(minIndex));
-    efficientReturn(i) = uniqueReturns(i);
-end
-
-% Exclude return levels below 0
-efficientVolatility(efficientReturn < 0) = [];
-efficientReturn(efficientReturn < 0) = [];
-
-% Plot the efficient frontier and the fitted curve
-figure(1);
-scatter(efficientVolatility, efficientReturn, 50, 'r', 'filled'); % Plot the efficient frontier
-hold on;
-
-xlabel('Volatility (Standard Deviation)');
-ylabel('Return');
-title('Efficient Frontier');
-legend('Efficient Frontier');
-hold off;
+% returns = returns (:,1:4);
+% numAssets = size(returns, 2);  % Number of assets, removing T-bills (Non risky)
+% expReturns1 = expReturns(1:4);    % Expected returns of each asset
+% covMatrix = cov(returns);      % Covariance matrix of the returns
+% 
+% 
+% numPortfolios = 5000000; % Define the number of portfolios to simulate
+% results = zeros(3, numPortfolios);  % Initialize results matrix
+% weightsMatrix = zeros(numPortfolios, numAssets);  % To store weights of each portfolio
+% 
+% for i = 1:numPortfolios
+%     weights = rand(numAssets, 1);  % Randomly generate weights
+%     weights = weights / sum(weights);  % Normalize weights to sum to 1
+%     portfolioReturn = weights' * expReturns1';  % Expected return of the portfolio
+%     portfolioRisk = sqrt(weights' * covMatrix * weights);  % Risk (standard deviation) of the portfolio
+% 
+%     results(1, i) = portfolioReturn;  % Store portfolio return
+%     results(2, i) = portfolioRisk;    % Store portfolio risk
+%     results(3, i) = portfolioReturn / portfolioRisk;  % Store Sharpe ratio (return/risk)
+% 
+%     weightsMatrix(i, :) = weights';  % Store the weights
+% end
+% 
+% [~, maxIndex] = max(results(3, :)) % Identify the portfolio with the highest Sharpe ratio
+% optimalWeights = weightsMatrix(maxIndex, :);
+% 
+% disp('Optimal Weights for the Portfolio with the Highest Sharpe Ratio:'); 
+% for i = 1:numAssets
+%     fprintf('%s %.2f%%\n', portfoliocomponents(i,:), optimalWeights(i) * 100);
+% end
+% 
+% uniqueReturns = unique(round(results(1, :), 4));% Find unique levels of return and round to 4 decimal places
+% 
+% efficientVolatility = zeros(size(uniqueReturns));% Initialize arrays to store volatility and return for the efficient frontier
+% efficientReturn = zeros(size(uniqueReturns));
+% 
+% for i = 1:length(uniqueReturns)
+%     % Find indices of portfolios with the current return level
+%     indices = find(round(results(1, :), 4) == uniqueReturns(i));
+% 
+%     % Determine the portfolio with the lowest volatility among these
+%     [~, minIndex] = min(results(2, indices));
+%     efficientVolatility(i) = results(2, indices(minIndex));
+%     efficientReturn(i) = uniqueReturns(i);
+% end
+% 
+% % Exclude return levels below 0
+% efficientVolatility(efficientReturn < 0) = [];
+% efficientReturn(efficientReturn < 0) = [];
+% 
+% % Plot the efficient frontier and the fitted curve
+% figure(1);
+% scatter(efficientVolatility, efficientReturn, 50, 'r', 'filled'); % Plot the efficient frontier
+% hold on;
+% 
+% xlabel('Volatility (Standard Deviation)');
+% ylabel('Return');
+% title('Efficient Frontier');
+% legend('Efficient Frontier');
+% hold off;
 
 %% ---------- Nelder-Mead method ----------
 % x0 = [0.2, 0.2, 0.2, 0.2,0.2]; % Starting point
@@ -278,7 +424,6 @@ function [S_p,U,weighted_U] = obj(E_p,sigma_p,E_risk_free,alpha)
     U = E_p - alpha*(sigma_p^2);
     weighted_U = -(0.5 * S_p + 0.5 * U);
 end
-% ---------- end of objective functions ----------
 
 %% ---------- Creating barrier function ----------
 
